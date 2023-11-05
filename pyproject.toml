@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "user-account-hub"
+version = "0.1.0"
+description = ""
+authors = ["Raneemoqaily7 <raneemoqaily7@gmail.com>"]
+readme = "README.md"
+packages = [{include = "user_account_hub"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+django = "^4.2.7"
+djangorestframework = "^3.14.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
