@@ -17,7 +17,8 @@ class User (models.Model):
     User_Status_Choices = [
         (0,"Active"),
         (1 ,"In Active"),
-        (2, "Suspended")
+        (2, "Suspended"),
+        (3 ,"Deleted")
     ]
 
     Gender_Choices =[
@@ -48,7 +49,8 @@ class Account (models.Model):
     Account_Status_Choices =[
         (0 ,"Active"),
         (1,"In Active"),
-        (2 ,"Suspended")
+        (2 ,"Suspended"),
+        (3 ,"Deleted")
     ]
     id = models.AutoField (primary_key=True)
     user_id = models.ForeignKey(User ,on_delete=models.CASCADE)
