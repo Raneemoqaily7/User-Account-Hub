@@ -40,12 +40,24 @@ class User (models.Model):
     gender = models.IntegerField (choices=Gender_Choices ,default=0)
     date_of_Birth = models.DateTimeField ()
 
+    is_admin =models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    is_staff=models.BooleanField(default=False)
+    is_superuser=models.BooleanField(default=False)
+
+    USERNAME_FIELD ="email"
+    REQUIRED_FIELDS =["username"]
+
     def __str__(self) :
         return self.username
 
 
 class Account (models.Model):
-
+    Currency_Choices=[
+        ('USD', 'US Dollar'),
+        ('EUR', 'Euro'),
+        ('JOD' ,'Jordanian Dinar')
+    ]
     Account_Status_Choices =[
         (0 ,"Active"),
         (1,"In Active"),
@@ -59,7 +71,7 @@ class Account (models.Model):
     update_DateTime_UTC = DateTimeUTCField(auto_now=True)
     accountNumber =models.CharField (max_length=30)
     balance =models.DecimalField(max_digits=7 ,decimal_places=2 ,validators=[MinValueValidator(0.01)])
-    currency = models.CharField(max_length=4 , default="USD")
+    currency = models.CharField(choices=Currency_Choices ,max_length=15, default="USD")
 
     status = models.IntegerField (choices=Account_Status_Choices ,default = 0)
 
