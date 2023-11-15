@@ -24,7 +24,7 @@ SECRET_KEY = 'django-insecure-e+&a@fdtqcpms)%1t2k&96opy^ex06p&p=90ihod1!3pwtgwcp
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
+CORS_ORIGIN_ALLOW_ALL = True
 ALLOWED_HOSTS = []
 
 
@@ -37,15 +37,23 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
     'UserAccountHub',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'corsheaders',
+    
 ]
+
+DEFAULT_PERMISSION_CLASSES =[   
+    "rest_framework.permissions.AllowAny"
+      ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -68,6 +76,7 @@ TEMPLATES = [
         },
     },
 ]
+AUTH_USER_MODEL="UserAccountHub.User"
 
 WSGI_APPLICATION = 'conf.wsgi.application'
 

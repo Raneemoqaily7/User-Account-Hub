@@ -1,11 +1,13 @@
-from UserAccountHub.api.serializers import UserSerializer ,AccountSerializer
-from UserAccountHub.models import User ,Account
+from UserAccountHub.api.serializers import UserSerializer ,AccountSerializer,Registerationerializer
+from UserAccountHub.models import User ,Account, UserStatus
+from rest_framework.authtoken.models import Token
 
 
 # Create your views here.
 from rest_framework.decorators import api_view 
 from rest_framework.response import Response 
 from rest_framework import status
+from django.db import transaction
 
 @api_view(["GET"])
 def user_list (request):
@@ -14,6 +16,7 @@ def user_list (request):
         
         user =User.objects.all()
         serializer =UserSerializer (user , many=True)
+        
     
         return Response (serializer.data)
 
@@ -47,11 +50,14 @@ def delete_users (request):
         return Response ({'error' :'user_id is required'} ,
                          status=status.HTTP_400_BAD_REQUEST)
     
+   
     else:
-        users=User.objects.filter(id__in= users_id)
-        users.delete()
-        data["success"]="deleted successful"
-        return Response(data=data, status=status.HTTP_204_NO_CONTENT)
+            with transaction.atomic():
+                users = User.objects.filter(id__in=users_id)
+                # Update status to 'DELETED'
+                users.update(status=UserStatus.DELETED)
+                data["success"] = "deleted successfully"
+                return Response(data=data, status=status.HTTP_204_NO_CONTENT)
     
 
 
@@ -62,7 +68,8 @@ def add_user(request):
         serializer = UserSerializer(data =request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response (serializer.data ,status=status.HTTP_201_CREATED)
+           
+            return Response (serializer.data ,status=status.HTTP_200_OK)
         else :
             return Response (serializer.errors ,status=status.HTTP_400_BAD_REQUEST)
         
@@ -82,7 +89,7 @@ def update_user (request , id):
         if serializer.is_valid():
             serializer.save()
             data["success"]="updated successfully"
-            return Response (data =data)
+            return Response (data =data ,status=status.HTTP_200_OK)
         else :
             return Response(serializer.errors)
 
@@ -183,3 +190,32 @@ def update_account (request ,id):
 
 
 
+
+
+@api_view(["POST"])
+def registeration_view (request):
+     if request.method =="POST":
+            serializer = Registerationerializer(data =request.data)
+            data={}
+            if serializer.is_valid():
+                print(f"Trying to register with email: {serializer.validated_data['email']}")
+                if User.objects.filter(email=serializer.validated_data['email']).exists():
+                    data['response'] = 'Email is already in use.'
+                else:
+                    user = serializer.save()
+                    data["response"] = "successfully registerd"
+                    data["email"] = user.email
+                    data["firstName"] = user.firstName
+                    data["status"] = user.status
+                    data["lastName"] = user.lastName
+                    data["gender"] = user.gender
+                    data["date_of_Birth"] = user.date_of_Birth
+                    data["username"] = user.username
+                    token = Token.objects.get(user=user) if Token.objects.filter(user=user).exists() else None
+                    data["token"] = token.key if token else None
+                    data["token"] =token
+                    user = serializer.save()
+                    print (data ,"reggiiisterrt")
+            else :
+                data=serializer.errors
+            return Response (data)
