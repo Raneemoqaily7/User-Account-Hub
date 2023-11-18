@@ -6,12 +6,14 @@ from django.contrib.auth.hashers import make_password
 class UserSerializer (serializers.ModelSerializer):
     status = serializers.CharField(source='get_status_display')
     gender = serializers.CharField(source='get_gender_display')
+
     class Meta :
         model = User
         fields ="__all__"
         depth = 1
 
 class AccountSerializer(serializers.ModelSerializer):
+    status = serializers.CharField(source='get_status_display')
     class Meta :
         model =Account
         fields ="__all__"

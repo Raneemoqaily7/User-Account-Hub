@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
+from django.core.validators import RegexValidator
 from django.contrib.auth.models import AbstractBaseUser,BaseUserManager
 from django.db.models.signals import post_save
 
@@ -23,6 +24,12 @@ class DateTimeUTCField(models.DateTimeField):
 from enum import IntEnum
 
 class UserStatus(IntEnum):
+    ACTIVE = 0
+    IN_ACTIVE = 1
+    SUSPENDED = 2
+    DELETED = 3
+
+class AccountStatus(IntEnum):
     ACTIVE = 0
     IN_ACTIVE = 1
     SUSPENDED = 2
@@ -108,6 +115,12 @@ class User (AbstractBaseUser):
 
 
 class Account (models.Model):
+    account_number_validator = RegexValidator(
+        regex=r'^\d{7}$',
+        message='Account number must be 7 digits.',
+        code='invalid_account_number'
+    )
+
     Currency_Choices=[
         ('USD', 'US Dollar'),
         ('EUR', 'Euro'),
@@ -125,18 +138,19 @@ class Account (models.Model):
         (Deleted ,"Deleted")
     ]
     id = models.AutoField (primary_key=True)
-    user_id = models.ForeignKey(User ,on_delete=models.CASCADE)
+    user_id = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, verbose_name='User')
     server_DateTime = models.DateTimeField(auto_now=True)
     dateTime_UTC =DateTimeUTCField(auto_now = True ,null=True ,blank =True)
     update_DateTime_UTC = DateTimeUTCField(auto_now=True)
-    accountNumber =models.CharField (max_length=30)
-    balance =models.DecimalField(max_digits=7 ,decimal_places=2 ,validators=[MinValueValidator(0.01)])
+    accountNumber =models.CharField (max_length=100,validators=[account_number_validator],
+        unique=True)
+    balance =models.DecimalField(max_digits=7, decimal_places=2, validators=[MinValueValidator(0.01)])
     currency = models.CharField(choices=Currency_Choices ,max_length=15, default="USD")
 
-    status = models.IntegerField (choices=Account_Status_Choices ,default = Active)
+    status = models.IntegerField (choices=[(status.value, status.name) for status in AccountStatus], default=AccountStatus.ACTIVE)
 
     def __str__(self):
-        return f"{self.username} - Status: {self.get_status_display()}"
+        return f"{self.accountNumber} - Status: {self.get_status_display()} for {self.user_id.username} "
     
 @receiver(post_save , sender =settings.AUTH_USER_MODEL)
 

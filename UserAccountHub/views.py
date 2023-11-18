@@ -1,5 +1,5 @@
 from UserAccountHub.api.serializers import UserSerializer ,AccountSerializer,Registerationerializer
-from UserAccountHub.models import User ,Account, UserStatus
+from UserAccountHub.models import User ,Account, UserStatus ,AccountStatus
 from rest_framework.authtoken.models import Token
 
 
@@ -33,7 +33,10 @@ def user_detail_view_by_username_or_email(request ,username_or_email):
                 user=User.objects.get(email= username_or_email)
 
         except User.DoesNotExist :
-            return Response (status=status.HTTP_404_NOT_FOUND)
+
+          data ={}
+          data["failed"]="no user found"
+          return Response (data =data ,status=status.HTTP_200_OK)
         
         serializer = UserSerializer(user)
         print (serializer.data)
@@ -79,19 +82,23 @@ def add_user(request):
 def update_user (request , id):
     try :
         user = User.objects.get(id =id)
+        print(user,"User")
+        if request.method =="PATCH":
+            serializer = UserSerializer (user, data=request.data , partial =True)
+        
+        if serializer.is_valid():
+           
+            serializer.save()
+           
+            return Response(serializer.data , status=status.HTTP_201_CREATED)
+        else :
+            print(serializer.errors)
+            return Response(serializer.errors,"errrrror")
 
     except User.DoesNotExist:
         return Response(status =status.HTTP_404_NOT_FOUND)
     
-    if request.method =="PATCH":
-        serializer = UserSerializer (user, request.data , partial =True)
-        data ={}
-        if serializer.is_valid():
-            serializer.save()
-            data["success"]="updated successfully"
-            return Response (data =data ,status=status.HTTP_200_OK)
-        else :
-            return Response(serializer.errors)
+    
 
 
 
@@ -128,8 +135,10 @@ def account_by_id (request,search_query):
                         try:
                             account = Account.objects.get(user_id =search_query)
                         except Account.DoesNotExist:
-                                return Response({"error":"Account Does Not Exist"},status =status.HTTP_404_NOT_FOUND)
-                         
+                                data ={}
+                                data["failed"]="no user found"
+                                return Response (data =data ,status=status.HTTP_200_OK)
+                        
                 serializer =AccountSerializer(account)
                 return Response(serializer.data)
 
@@ -139,15 +148,20 @@ def account_by_id (request,search_query):
 @api_view(["DELETE"])
 def delete_accounts(request ):
     accounts_id=request.data.get("accounts_id" ,[])
+    data={}
     if not accounts_id :
         return Response ({"error" : "account_id is required"} ,status=status.HTTP_400_BAD_REQUEST)
 
     else :
-        data ={}
-        accounts =Account.objects.filter(id__in = accounts_id)
-        accounts.delete()
-        data["success"]="Deleted Successfully"
-        return Response(data=data, status=status.HTTP_204_NO_CONTENT)
+        with transaction.atomic():
+            data ={}
+            accounts =Account.objects.filter(id__in = accounts_id)
+            accounts.update(status=AccountStatus.DELETED)
+            data["success"]="Deleted Successfully"
+            return Response(data=data, status=status.HTTP_204_NO_CONTENT)
+
+
+   
 
 # //////////////////////////////////////////////////////
 # Add new account 
@@ -170,9 +184,9 @@ def add_account(request):
 @api_view (["PATCH"])
 def update_account (request ,id):
     
-
         try:
 
+            print(request.data ,"Data")
             account = Account.objects.get (id=id)
         except Account.DoesNotExist:
             return Response (status=status.HTTP_404_NOT_FOUND)
@@ -185,24 +199,25 @@ def update_account (request ,id):
                 return Response(serializer.errors)
         
         
-        
-
-
-
-
-
-
 @api_view(["POST"])
 def registeration_view (request):
      if request.method =="POST":
+            print(request.data ,"Data")
+            
             serializer = Registerationerializer(data =request.data)
+ 
             data={}
             if serializer.is_valid():
+                print("Serializer is valid")
                 print(f"Trying to register with email: {serializer.validated_data['email']}")
                 if User.objects.filter(email=serializer.validated_data['email']).exists():
                     data['response'] = 'Email is already in use.'
+                    print("Email is already in use")
+
                 else:
+                    print(request.data)
                     user = serializer.save()
+                    data={}
                     data["response"] = "successfully registerd"
                     data["email"] = user.email
                     data["firstName"] = user.firstName
@@ -214,8 +229,10 @@ def registeration_view (request):
                     token = Token.objects.get(user=user) if Token.objects.filter(user=user).exists() else None
                     data["token"] = token.key if token else None
                     data["token"] =token
-                    user = serializer.save()
-                    print (data ,"reggiiisterrt")
+                    
+               
             else :
-                data=serializer.errors
-            return Response (data)
+                    print("Serializer is not valid")                 
+                    data=serializer.errors
+                    print (data)
+                    return Response (data)
